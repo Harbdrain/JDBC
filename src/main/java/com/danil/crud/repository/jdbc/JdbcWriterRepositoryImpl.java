@@ -20,6 +20,7 @@ public class JdbcWriterRepositoryImpl implements WriterRepository {
     Connection writerConnection = null;
     PostRepository postRepository = new JdbcPostRepositoryImpl();
 
+    // TODO add check if null everywhere
     public JdbcWriterRepositoryImpl() {
         try {
             Class.forName(RepositoryUtils.JDBC_DRIVER); // Legacy, no longer needed
@@ -148,10 +149,10 @@ public class JdbcWriterRepositoryImpl implements WriterRepository {
             statement.executeUpdate();
 
             for (Post post : writer.getPosts()) {
-                if (post.getId() == null || postRepository.getById(post.getId()) == null) {
-                    postRepository.create(post);
-                } else {
+                if (postRepository.getById(post.getId()) != null) {
                     postRepository.update(post);
+                } else {
+                    postRepository.create(post);
                 }
                 postRepository.setWriter(post.getId(), writer.getId());
             }

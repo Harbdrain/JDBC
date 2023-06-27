@@ -29,26 +29,20 @@ public class JdbcLabelRepositoryImpl implements LabelRepository {
         }
     }
 
+    // TODO: change printStackTrace to println()
     @Override
     public Label create(Label label) {
-        final String SQL_GET_BY_NAME = "SELECT * FROM labels WHERE name = ? AND status != 'DELETED'";
-        final String SQL_CREATE = "INSERT INTO labels (name, status) VALUES (?, ?)";
+        final String SQL = "INSERT INTO labels (name, status) VALUES (?, ?)";
 
-        try (
-                PreparedStatement statementCreate = labelConnection.prepareStatement(SQL_CREATE,
-                        Statement.RETURN_GENERATED_KEYS);
-                PreparedStatement statementGetByName = labelConnection.prepareStatement(SQL_GET_BY_NAME);) {
-            statementGetByName.setString(1, label.getName());
-            ResultSet resultSet = statementGetByName.executeQuery();
-            if (!resultSet.next()) {
-                statementCreate.setString(1, label.getName());
-                statementCreate.setInt(2, label.getStatus().getCode());
-                statementCreate.executeUpdate();
-                ResultSet keys = statementCreate.getGeneratedKeys();
-                if (keys.next()) {
-                    int id = keys.getInt(1);
-                    label.setId(id);
-                }
+        try (PreparedStatement statement = labelConnection.prepareStatement(SQL,
+                Statement.RETURN_GENERATED_KEYS)) {
+            statement.setString(1, label.getName());
+            statement.setInt(2, label.getStatus().getCode());
+            statement.executeUpdate();
+            ResultSet keys = statement.getGeneratedKeys();
+            if (keys.next()) {
+                int id = keys.getInt(1);
+                label.setId(id);
             }
         } catch (SQLException e) {
             System.out.println(e);

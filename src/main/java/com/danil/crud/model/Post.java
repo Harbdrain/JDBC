@@ -89,4 +89,26 @@ public class Post {
     public boolean isDeleted() {
         return this.status == PostStatus.DELETED;
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == this)
+            return true;
+        if (!(o instanceof Post))
+            return false;
+        Post other = (Post) o;
+
+        boolean idEquals = this.id == null && other.id == null || this.id.equals(other.id);
+        boolean contentEquals = this.content == null && other.content == null
+                || this.content != null && this.content.equals(other.content);
+        boolean createdEquals = this.created == null && other.created == null
+                || this.created != null && this.created.equals(other.created);
+        boolean updatedEquals = this.updated == null && other.updated == null
+                || this.updated != null && this.updated.equals(other.updated);
+        boolean labelsEquals = this.labels == null && other.labels == null
+                || this.labels != null && this.labels.equals(other.labels);
+        boolean statusEquals = this.status == other.status;
+
+        return idEquals && contentEquals && createdEquals && updatedEquals && labelsEquals && statusEquals;
+    }
 }

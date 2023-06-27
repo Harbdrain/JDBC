@@ -1,6 +1,5 @@
 package com.danil.crud.repository.jdbc;
 
-import java.sql.Array;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -33,6 +32,7 @@ public class JdbcPostRepositoryImpl implements PostRepository {
         }
     }
 
+    // TODO: transaction ?
     @Override
     public Post create(Post post) {
         final String SQL = "INSERT INTO posts (content, created, updated, status) VALUES (?, ?, ?, ?)";

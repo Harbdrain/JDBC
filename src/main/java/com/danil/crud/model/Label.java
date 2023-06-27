@@ -41,4 +41,16 @@ public class Label {
     public String toString() {
         return "ID: " + this.id + ", " + "name: " + this.name + ", " + "status: " + this.status;
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == this)
+            return true;
+        if (!(o instanceof Label))
+            return false;
+        Label other = (Label) o;
+        boolean idEquals = this.id == null && other.id == null || this.id != null && this.id.equals(other.id);
+        boolean nameEquals = this.name == null && other.name == null || this.name != null && this.name.equals(other.name);
+        return idEquals && nameEquals && this.status == other.status;
+    }
 }

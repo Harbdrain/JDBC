@@ -75,4 +75,23 @@ public class Writer {
         builder.append("]");
         return builder.toString();
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == this)
+            return true;
+        if (!(o instanceof Writer))
+            return false;
+        Writer other = (Writer) o;
+        boolean idEquals = this.id == null && other.id == null || this.id != null && this.id.equals(other.id);
+        boolean firstNameEquals = this.firstName == null && other.firstName == null
+                || this.firstName != null && this.firstName.equals(other.firstName);
+        boolean lastNameEquals = this.lastName == null && other.lastName == null
+                || this.lastName != null && this.lastName.equals(other.lastName);
+        boolean postsEquals = this.posts == null && other.posts == null || this.posts.equals(other.posts);
+        boolean statusEquals = this.status == other.status;
+
+        return idEquals && firstNameEquals && lastNameEquals && postsEquals && statusEquals;
+    }
+
 }
