@@ -20,7 +20,6 @@ public class JdbcWriterRepositoryImpl implements WriterRepository {
     Connection writerConnection = null;
     PostRepository postRepository = new JdbcPostRepositoryImpl();
 
-    // TODO add check if null everywhere
     public JdbcWriterRepositoryImpl() {
         try {
             Class.forName(RepositoryUtils.JDBC_DRIVER); // Legacy, no longer needed
@@ -91,7 +90,6 @@ public class JdbcWriterRepositoryImpl implements WriterRepository {
         return result;
     }
 
-    // TODO: move to post repo?
     private List<Post> getPosts(int writerId) {
         List<Integer> postIds = new ArrayList<>();
         final String SQL = "SELECT id FROM posts WHERE status != 'DELETED' AND writer_id = ?";

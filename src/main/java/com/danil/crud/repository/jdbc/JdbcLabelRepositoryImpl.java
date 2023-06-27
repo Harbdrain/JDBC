@@ -29,7 +29,6 @@ public class JdbcLabelRepositoryImpl implements LabelRepository {
         }
     }
 
-    // TODO: change printStackTrace to println()
     @Override
     public Label create(Label label) {
         final String SQL = "INSERT INTO labels (name, status) VALUES (?, ?)";

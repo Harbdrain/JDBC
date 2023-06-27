@@ -32,7 +32,6 @@ public class JdbcPostRepositoryImpl implements PostRepository {
         }
     }
 
-    // TODO: transaction ?
     @Override
     public Post create(Post post) {
         final String SQL = "INSERT INTO posts (content, created, updated, status) VALUES (?, ?, ?, ?)";
