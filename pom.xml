@@ -16,6 +16,7 @@
     <juinit-version>4.13.2</juinit-version>
     <mockito-core-version>5.4.0</mockito-core-version>
     <jacoco-maven-plugin-version>0.8.10</jacoco-maven-plugin-version>
+    <liquibase-core-version>4.23.0</liquibase-core-version>
   </properties>
 
   <dependencies>
@@ -43,6 +44,12 @@
         <groupId>org.jacoco</groupId>
         <artifactId>jacoco-maven-plugin</artifactId>
         <version>${jacoco-maven-plugin-version}</version>
+    </dependency>
+    <!-- https://mvnrepository.com/artifact/org.liquibase/liquibase-core -->
+    <dependency>
+        <groupId>org.liquibase</groupId>
+        <artifactId>liquibase-core</artifactId>
+        <version>${liquibase-core-version}</version>
     </dependency>
   </dependencies>
 
