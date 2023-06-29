@@ -1,6 +1,6 @@
 <?xml version="1.1" encoding="UTF-8" standalone="no"?>
 <databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog" xmlns:ext="http://www.liquibase.org/xml/ns/dbchangelog-ext" xmlns:pro="http://www.liquibase.org/xml/ns/pro" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog-ext http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd http://www.liquibase.org/xml/ns/pro http://www.liquibase.org/xml/ns/pro/liquibase-pro-latest.xsd http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
-    <changeSet author="Harbdrain" id="1687954029394-1">
+    <changeSet author="danil.demchenko" id="create-labels-table">
         <createTable tableName="labels">
             <column autoIncrement="true" name="id" type="INT">
                 <constraints nullable="false" primaryKey="true" unique="true"/>
@@ -9,17 +9,7 @@
             <column defaultValue="null" name="status" type="ENUM('ACTIVE', 'DELETED')"/>
         </createTable>
     </changeSet>
-    <changeSet author="Harbdrain" id="1687954029394-2">
-        <createTable tableName="post_label_relationship">
-            <column name="post_id" type="INT">
-                <constraints nullable="false"/>
-            </column>
-            <column name="label_id" type="INT">
-                <constraints nullable="false"/>
-            </column>
-        </createTable>
-    </changeSet>
-    <changeSet author="Harbdrain" id="1687954029394-3">
+    <changeSet author="danil.demchenko" id="create-posts-table">
         <createTable tableName="posts">
             <column autoIncrement="true" name="id" type="INT">
                 <constraints nullable="false" primaryKey="true" unique="true"/>
@@ -30,8 +20,12 @@
             <column defaultValueComputed="NULL" name="writer_id" type="INT"/>
             <column defaultValue="null" name="status" type="ENUM('ACTIVE', 'UNDER_REVIEW', 'DELETED')"/>
         </createTable>
+        <createIndex indexName="writer_id" tableName="posts">
+            <column defaultValueComputed="NULL" name="writer_id"/>
+        </createIndex>
+        <addForeignKeyConstraint baseColumnNames="writer_id" baseTableName="posts" constraintName="posts_ibfk_1" deferrable="false" initiallyDeferred="false" onDelete="RESTRICT" onUpdate="RESTRICT" referencedColumnNames="id" referencedTableName="writers" validate="true"/>
     </changeSet>
-    <changeSet author="Harbdrain" id="1687954029394-4">
+    <changeSet author="danil.demchenko" id="create-writers-table">
         <createTable tableName="writers">
             <column autoIncrement="true" name="id" type="INT">
                 <constraints nullable="false" primaryKey="true" unique="true"/>
@@ -41,28 +35,22 @@
             <column defaultValue="null" name="status" type="ENUM('ACTIVE', 'DELETED')"/>
         </createTable>
     </changeSet>
-    <changeSet author="Harbdrain" id="1687954029394-5">
+    <changeSet author="danil.demchenko" id="create-post_label_relationship-table">
+        <createTable tableName="post_label_relationship">
+            <column name="post_id" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="label_id" type="INT">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
         <createIndex indexName="label_id" tableName="post_label_relationship">
             <column name="label_id"/>
         </createIndex>
-    </changeSet>
-    <changeSet author="Harbdrain" id="1687954029394-6">
         <createIndex indexName="post_id" tableName="post_label_relationship">
             <column name="post_id"/>
         </createIndex>
-    </changeSet>
-    <changeSet author="Harbdrain" id="1687954029394-7">
-        <createIndex indexName="writer_id" tableName="posts">
-            <column defaultValueComputed="NULL" name="writer_id"/>
-        </createIndex>
-    </changeSet>
-    <changeSet author="Harbdrain" id="1687954029394-8">
         <addForeignKeyConstraint baseColumnNames="post_id" baseTableName="post_label_relationship" constraintName="post_label_relationship_ibfk_1" deferrable="false" initiallyDeferred="false" onDelete="RESTRICT" onUpdate="RESTRICT" referencedColumnNames="id" referencedTableName="posts" validate="true"/>
-    </changeSet>
-    <changeSet author="Harbdrain" id="1687954029394-9">
         <addForeignKeyConstraint baseColumnNames="label_id" baseTableName="post_label_relationship" constraintName="post_label_relationship_ibfk_2" deferrable="false" initiallyDeferred="false" onDelete="RESTRICT" onUpdate="RESTRICT" referencedColumnNames="id" referencedTableName="labels" validate="true"/>
-    </changeSet>
-    <changeSet author="Harbdrain" id="1687954029394-10">
-        <addForeignKeyConstraint baseColumnNames="writer_id" baseTableName="posts" constraintName="posts_ibfk_1" deferrable="false" initiallyDeferred="false" onDelete="RESTRICT" onUpdate="RESTRICT" referencedColumnNames="id" referencedTableName="writers" validate="true"/>
     </changeSet>
 </databaseChangeLog>

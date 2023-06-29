@@ -6,8 +6,8 @@ public class Writer {
     private Integer id;
     private String firstName;
     private String lastName;
-    List<Post> posts;
-    WriterStatus status;
+    private List<Post> posts;
+    private WriterStatus status;
 
     public Integer getId() {
         return id;

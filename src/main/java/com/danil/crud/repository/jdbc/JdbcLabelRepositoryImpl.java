@@ -1,7 +1,5 @@
 package com.danil.crud.repository.jdbc;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -15,25 +13,11 @@ import com.danil.crud.repository.LabelRepository;
 import com.danil.crud.utils.RepositoryUtils;
 
 public class JdbcLabelRepositoryImpl implements LabelRepository {
-    Connection labelConnection = null;
-
-    public JdbcLabelRepositoryImpl() {
-        try {
-            Class.forName(RepositoryUtils.JDBC_DRIVER); // Legacy, no longer needed
-            labelConnection = DriverManager.getConnection(
-                    RepositoryUtils.DATABASE_URL,
-                    RepositoryUtils.USER,
-                    RepositoryUtils.PASSWORD);
-        } catch (ClassNotFoundException | SQLException e) {
-            System.out.println(e);
-        }
-    }
-
     @Override
     public Label create(Label label) {
         final String SQL = "INSERT INTO labels (name, status) VALUES (?, ?)";
 
-        try (PreparedStatement statement = labelConnection.prepareStatement(SQL,
+        try (PreparedStatement statement = RepositoryUtils.getPreparedStatement(SQL,
                 Statement.RETURN_GENERATED_KEYS)) {
             statement.setString(1, label.getName());
             statement.setInt(2, label.getStatus().getCode());
@@ -53,17 +37,10 @@ public class JdbcLabelRepositoryImpl implements LabelRepository {
     public List<Label> getAll() {
         final String SQL = "SELECT id, name, status FROM labels WHERE status != 'DELETED'";
         List<Label> result = new ArrayList<>();
-        try (Statement statement = labelConnection.createStatement()) {
-            ResultSet resultSet = statement.executeQuery(SQL);
+        try (PreparedStatement statement = RepositoryUtils.getPreparedStatement(SQL)) {
+            ResultSet resultSet = statement.executeQuery();
             while (resultSet.next()) {
-                int id = resultSet.getInt(1);
-                String name = resultSet.getString(2);
-                LabelStatus status = LabelStatus.getStatus(resultSet.getString(3));
-
-                Label label = new Label();
-                label.setId(id);
-                label.setName(name);
-                label.setStatus(status);
+                Label label = getLabelFromResulSet(resultSet);
                 result.add(label);
             }
         } catch (SQLException e) {
@@ -72,24 +49,29 @@ public class JdbcLabelRepositoryImpl implements LabelRepository {
         return result;
     }
 
+    private Label getLabelFromResulSet(ResultSet resultSet) throws SQLException {
+        int id = resultSet.getInt(1);
+        String name = resultSet.getString(2);
+        LabelStatus status = LabelStatus.getStatus(resultSet.getString(3));
+
+        Label label = new Label();
+        label.setId(id);
+        label.setName(name);
+        label.setStatus(status);
+        return label;
+    }
+
     @Override
     public Label getById(Integer targetId) {
         final String SQL = "SELECT id, name, status FROM labels WHERE id = ? AND status != 'DELETED'";
         Label result = null;
 
-        try (PreparedStatement statement = labelConnection.prepareStatement(SQL)) {
+        try (PreparedStatement statement = RepositoryUtils.getPreparedStatement(SQL)) {
             statement.setInt(1, targetId);
 
             ResultSet resultSet = statement.executeQuery();
             if (resultSet.next()) {
-                int id = resultSet.getInt(1);
-                String name = resultSet.getString(2);
-                LabelStatus status = LabelStatus.getStatus(resultSet.getString(3));
-
-                result = new Label();
-                result.setId(id);
-                result.setName(name);
-                result.setStatus(status);
+                result = getLabelFromResulSet(resultSet);
             }
         } catch (SQLException e) {
             System.out.println(e);
@@ -101,7 +83,7 @@ public class JdbcLabelRepositoryImpl implements LabelRepository {
     @Override
     public Label update(Label label) {
         final String SQL = "UPDATE labels SET name = ? WHERE id = ?";
-        try (PreparedStatement statement = labelConnection.prepareStatement(SQL)) {
+        try (PreparedStatement statement = RepositoryUtils.getPreparedStatement(SQL)) {
             statement.setString(1, label.getName());
             statement.setInt(2, label.getId());
             statement.executeUpdate();
@@ -114,7 +96,7 @@ public class JdbcLabelRepositoryImpl implements LabelRepository {
     @Override
     public void deleteById(Integer id) {
         final String SQL = "UPDATE labels SET status = 'DELETED' WHERE id = ?";
-        try (PreparedStatement statement = labelConnection.prepareStatement(SQL)) {
+        try (PreparedStatement statement = RepositoryUtils.getPreparedStatement(SQL)) {
             statement.setInt(1, id);
             statement.executeUpdate();
         } catch (SQLException e) {

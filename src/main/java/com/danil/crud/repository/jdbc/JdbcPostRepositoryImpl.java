@@ -1,7 +1,5 @@
 package com.danil.crud.repository.jdbc;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -17,25 +15,12 @@ import com.danil.crud.repository.PostRepository;
 import com.danil.crud.utils.RepositoryUtils;
 
 public class JdbcPostRepositoryImpl implements PostRepository {
-    Connection postConnection = null;
     LabelRepository labelRepository = new JdbcLabelRepositoryImpl();
-
-    public JdbcPostRepositoryImpl() {
-        try {
-            Class.forName(RepositoryUtils.JDBC_DRIVER); // Legacy, no longer needed
-            postConnection = DriverManager.getConnection(
-                    RepositoryUtils.DATABASE_URL,
-                    RepositoryUtils.USER,
-                    RepositoryUtils.PASSWORD);
-        } catch (ClassNotFoundException | SQLException e) {
-            e.printStackTrace();
-        }
-    }
 
     @Override
     public Post create(Post post) {
         final String SQL = "INSERT INTO posts (content, created, updated, status) VALUES (?, ?, ?, ?)";
-        try (PreparedStatement statement = postConnection.prepareStatement(SQL, Statement.RETURN_GENERATED_KEYS)) {
+        try (PreparedStatement statement = RepositoryUtils.getPreparedStatement(SQL, Statement.RETURN_GENERATED_KEYS)) {
             statement.setString(1, post.getContent());
             statement.setLong(2, post.getCreated());
             statement.setLong(3, post.getUpdated());
@@ -65,8 +50,8 @@ public class JdbcPostRepositoryImpl implements PostRepository {
         final String SQL_GET = "SELECT * FROM post_label_relationship WHERE post_id = ? AND label_id = ?";
         final String SQL_CREATE = "INSERT INTO post_label_relationship (post_id, label_id) VALUES (?, ?)";
         try (
-                PreparedStatement statementGet = postConnection.prepareStatement(SQL_GET);
-                PreparedStatement statementCreate = postConnection.prepareStatement(SQL_CREATE);) {
+                PreparedStatement statementGet = RepositoryUtils.getPreparedStatement(SQL_GET);
+                PreparedStatement statementCreate = RepositoryUtils.getPreparedStatement(SQL_CREATE);) {
             statementGet.setInt(1, post.getId());
             statementGet.setInt(2, label.getId());
             ResultSet resultSet = statementGet.executeQuery();
@@ -82,26 +67,17 @@ public class JdbcPostRepositoryImpl implements PostRepository {
 
     @Override
     public List<Post> getAll() {
-        final String SQL = "SELECT id, content, created, updated, status FROM posts WHERE status != 'DELETED'";
+        final String SQL = "SELECT posts.id, posts.content, posts.created, posts.updated, posts.status, post_label_relationship.label_id as label_id FROM posts LEFT JOIN post_label_relationship ON posts.id = post_label_relationship.post_id LEFT JOIN labels ON post_label_relationship.label_id = labels.id WHERE posts.status != 'DELETED'";
         List<Post> result = new ArrayList<>();
-        try (Statement statement = postConnection.createStatement()) {
-            ResultSet resultSet = statement.executeQuery(SQL);
+        try (PreparedStatement statement = RepositoryUtils.getPreparedStatement(SQL)) {
+            ResultSet resultSet = statement.executeQuery();
             while (resultSet.next()) {
-                int id = resultSet.getInt(1);
-                String content = resultSet.getString(2);
-                long created = resultSet.getLong(3);
-                long updated = resultSet.getLong(4);
-                PostStatus status = PostStatus.getStatus(resultSet.getString(5));
-
-                Post post = new Post();
-                post.setId(id);
-                post.setContent(content);
-                post.setCreated(created);
-                post.setUpdated(updated);
-                post.setStatus(status);
-                post.setLabels(getLabels(id));
-
-                result.add(post);
+                Post post = getPostFromResultSet(resultSet);
+                if (!result.isEmpty() && result.get(result.size() - 1).getId().equals(post.getId())) {
+                    result.get(result.size() - 1).addLabel(post.getLabels().get(0));
+                } else {
+                    result.add(post);
+                }
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -110,59 +86,56 @@ public class JdbcPostRepositoryImpl implements PostRepository {
         return result;
     }
 
-    private List<Label> getLabels(int postId) {
-        List<Integer> labelIds = new ArrayList<>();
-        final String SQL = "SELECT label_id "
-                + "FROM post_label_relationship JOIN labels ON post_label_relationship.label_id = labels.id " +
-                "WHERE post_id = ? AND labels.status != 'DELETED'";
+    private Post getPostFromResultSet(ResultSet resultSet) throws SQLException {
+        int id = resultSet.getInt(1);
+        String content = resultSet.getString(2);
+        long created = resultSet.getLong(3);
+        long updated = resultSet.getLong(4);
+        PostStatus status = PostStatus.getStatus(resultSet.getString(5));
+        int labelId = resultSet.getInt(6);
+        Label label = labelRepository.getById(labelId);
 
-        try (PreparedStatement statement = postConnection.prepareStatement(SQL)) {
-            statement.setInt(1, postId);
-            ResultSet resultSet = statement.executeQuery();
-            while (resultSet.next()) {
-                labelIds.add(resultSet.getInt(1));
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
+        Post post = new Post();
+        post.setId(id);
+        post.setContent(content);
+        post.setCreated(created);
+        post.setUpdated(updated);
+        post.setStatus(status);
+        post.setLabels(new ArrayList<>());
+        if (label != null) {
+            post.addLabel(label);
         }
-        return labelRepository.getByIds(labelIds);
+        return post;
     }
 
     @Override
     public Post getById(Integer targetId) {
-        final String SQL = "SELECT id, content, created, updated, status FROM posts WHERE id = ? AND status != 'DELETED'";
-        Post post = null;
+        final String SQL = "SELECT posts.id, posts.content, posts.created, posts.updated, posts.status, post_label_relationship.label_id as label_id FROM posts LEFT JOIN post_label_relationship ON posts.id = post_label_relationship.post_id LEFT JOIN labels ON post_label_relationship.label_id = labels.id WHERE posts.status != 'DELETED' AND posts.id = ?;";
+        Post result = null;
 
-        try (PreparedStatement statement = postConnection.prepareStatement(SQL)) {
+        try (PreparedStatement statement = RepositoryUtils.getPreparedStatement(SQL)) {
             statement.setInt(1, targetId);
             ResultSet resultSet = statement.executeQuery();
 
-            if (resultSet.next()) {
-                int id = resultSet.getInt(1);
-                String content = resultSet.getString(2);
-                long created = resultSet.getLong(3);
-                long updated = resultSet.getLong(4);
-                PostStatus status = PostStatus.getStatus(resultSet.getString(5));
-
-                post = new Post();
-                post.setId(id);
-                post.setContent(content);
-                post.setCreated(created);
-                post.setUpdated(updated);
-                post.setStatus(status);
-                post.setLabels(getLabels(id));
+            while (resultSet.next()) {
+                Post post = getPostFromResultSet(resultSet);
+                if (result == null) {
+                    result = post;
+                } else {
+                    result.addLabel(post.getLabels().get(0));
+                }
             }
         } catch (SQLException e) {
             e.printStackTrace();
         }
 
-        return post;
+        return result;
     }
 
     @Override
     public Post update(Post post) {
         final String SQL = "UPDATE posts SET content = ?, created = ?, updated = ?, status = ? WHERE id = ?";
-        try (PreparedStatement statement = postConnection.prepareStatement(SQL)) {
+        try (PreparedStatement statement = RepositoryUtils.getPreparedStatement(SQL)) {
             statement.setString(1, post.getContent());
             statement.setLong(2, post.getCreated());
             statement.setLong(3, post.getUpdated());
@@ -189,14 +162,17 @@ public class JdbcPostRepositoryImpl implements PostRepository {
 
     void retainPostLabelRelationshipByLabelIds(int postId, List<Integer> labelIds) {
         StringBuilder builder = new StringBuilder();
-        builder.append("DELETE FROM post_label_relationship WHERE post_id = ? AND label_id NOT IN(");
-        for (int i = 0; i < labelIds.size() - 1; i++) {
-            builder.append("?, ");
+        builder.append("DELETE FROM post_label_relationship WHERE post_id = ?");
+        if (!labelIds.isEmpty()) {
+            builder.append(" AND label_id NOT IN(");
+            for (int i = 0; i < labelIds.size() - 1; i++) {
+                builder.append("?, ");
+            }
+            builder.append("?)");
         }
-        builder.append("?)");
         final String SQL = builder.toString();
 
-        try (PreparedStatement statement = postConnection.prepareStatement(SQL)) {
+        try (PreparedStatement statement = RepositoryUtils.getPreparedStatement(SQL)) {
             statement.setInt(1, postId);
             for (int i = 0; i < labelIds.size(); i++) {
                 statement.setInt(i + 2, labelIds.get(i));
@@ -210,7 +186,7 @@ public class JdbcPostRepositoryImpl implements PostRepository {
     @Override
     public void deleteById(Integer id) {
         final String SQL = "UPDATE posts SET status = 'DELETED' WHERE id = ?";
-        try (PreparedStatement statement = postConnection.prepareStatement(SQL)) {
+        try (PreparedStatement statement = RepositoryUtils.getPreparedStatement(SQL)) {
             statement.setInt(1, id);
             statement.executeUpdate();
         } catch (SQLException e) {
@@ -221,7 +197,7 @@ public class JdbcPostRepositoryImpl implements PostRepository {
     @Override
     public void setWriter(int postId, int writerId) {
         final String SQL = "UPDATE posts SET writer_id = ? WHERE id = ?";
-        try (PreparedStatement statement = postConnection.prepareStatement(SQL)) {
+        try (PreparedStatement statement = RepositoryUtils.getPreparedStatement(SQL)) {
             statement.setInt(1, writerId);
             statement.setInt(2, postId);
             statement.executeUpdate();
